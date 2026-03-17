@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"library/back/db"
 	"library/back/models"
 	"net/http"
@@ -27,11 +28,11 @@ func (h *Handler) Status_handler(c *gin.Context) {
 
 func (h *Handler) Add_book(c *gin.Context) {
 	type book_input struct {
-		Id         string `json:"id"`
-		Name       string `json:"name"`
-		Autor_name string `json:"autor_name"`
-		Autor_id   int64  `json:"autor_id"`
-		Year       int64  `json:"year"`
+		Id               string `json:"id"`
+		Title            string `json:"title"`
+		Author_name      string `json:"author_name"`
+		Author_id        int64  `json:"author_id"`
+		Year_publication int64  `json:"year_publication"`
 	}
 
 	var req book_input
@@ -40,27 +41,30 @@ func (h *Handler) Add_book(c *gin.Context) {
 		return
 	}
 
-	// Valida el libro
-	newBook, err := models.New_book(req.Id, req.Name, req.Autor_name, req.Autor_id, req.Year)
+	newBook, err := models.New_book(req.Id, req.Title, req.Author_name, req.Author_id, req.Year_publication)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Una sola consulta INSERT (con constraint UNIQUE en la BD)
 	if err := db.Insert_book(c.Request.Context(), h.db_pool, newBook); err != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		if errors.Is(err, db.Err_book_already_exists) {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"id":         newBook.Id_value(),
-		"name":       newBook.Name_value(),
-		"autor_name": newBook.Autor_value(),
-		"autor_id":   newBook.Autor_id_value(),
-		"year":       newBook.Year_value(),
-		"created_at": newBook.Created_at_value(),
-		"updated_at": newBook.Updated_at_value(),
+		"id":               newBook.Id_value(),
+		"title":            newBook.Title_value(),
+		"author_name":      newBook.Author_name_value(),
+		"author_id":        newBook.Author_id_value(),
+		"year_publication": newBook.Year_publication_value(),
+		"created_at":       newBook.Created_at_value(),
+		"updated_at":       newBook.Updated_at_value(),
 	})
 }
 
