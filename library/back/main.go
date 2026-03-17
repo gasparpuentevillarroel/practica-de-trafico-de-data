@@ -1,15 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os" // Para leer el puerto del .env
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
-	"practicar/back/db"
-	"practicar/back/handlers"
+	"library/back/db"
+	"library/back/handlers"
 )
 
 func main() {
@@ -23,7 +25,10 @@ func main() {
 		os.Getenv("DB_NAME"),
 	)
 
-	db_pool, err := db.Connect_db(conn_str)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	db_pool, err := db.Connect_db(ctx, conn_str)
 	if err != nil {
 		log.Fatal(err)
 	}

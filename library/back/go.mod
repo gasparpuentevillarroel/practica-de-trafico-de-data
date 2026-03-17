@@ -1,4 +1,4 @@
-module practicar/back
+module library/back
 
 go 1.24.0
 
