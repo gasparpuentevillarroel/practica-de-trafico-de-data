@@ -1,2 +1,5 @@
 .env
 .exe
+private.pem
+public.pem
+gen_keys.go
